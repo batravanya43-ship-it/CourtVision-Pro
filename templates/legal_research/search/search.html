@@ -1,0 +1,461 @@
+{% extends 'base.html' %}
+{% load i18n static widget_tweaks %}
+
+{% block title %}{% trans "Advanced Search - CourtVision Pro" %}{% endblock %}
+
+<body data-page="search">
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="bi bi-search me-2"></i>{% trans "Advanced Case Search" %}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% trans "Search through thousands of legal cases with AI-powered suggestions and filters" %}
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary" id="toggleAdvancedSearch">
+                        <i class="bi bi-sliders me-2"></i>{% trans "Advanced Filters" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Search Form -->
+        <div class="col-xl-3">
+            <div class="search-form">
+                <h5 class="mb-3">{% trans "Search Cases" %}</h5>
+                <form id="searchForm">
+                    {% csrf_token %}
+
+                    <!-- Main Search Input -->
+                    <div class="search-input-group mb-3">
+                        {{ search_input|add_class:"form-control form-control-lg"|attr:"id:searchInput"|attr:"placeholder:Search for cases, statutes, or legal principles..." }}
+                        <i class="bi bi-search search-icon"></i>
+                        <div id="searchSuggestions" class="search-suggestions"></div>
+                    </div>
+
+                    <!-- Quick Filters -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-funnel me-1"></i>{% trans "Quick Filters" %}
+                        </label>
+                        <div class="filter-option">
+                            <input type="checkbox" id="filter_recent" name="filter_recent" class="search-filter" value="recent" data-label="Recent Cases">
+                            <label for="filter_recent">{% trans "Recent Cases (Last 5 years)" %}</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="filter_landmark" name="filter_landmark" class="search-filter" value="landmark" data-label="Landmark Judgments">
+                            <label for="filter_landmark">{% trans "Landmark Judgments" %}</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="filter_precedent" name="filter_precedent" class="search-filter" value="precedent" data-label="Strong Precedents">
+                            <label for="filter_precedent">{% trans "Strong Precedents" %}</label>
+                        </div>
+                    </div>
+
+                    <!-- Court Filter -->
+                    <div class="mb-3">
+                        <label for="filter_court" class="form-label fw-semibold">
+                            <i class="bi bi-building me-1"></i>{% trans "High Court" %}
+                        </label>
+                        <select name="filter_court" id="filter_court" class="form-select search-filter">
+                            <option value="">{% trans "All Courts" %}</option>
+                            {% for court in high_courts %}
+                            <option value="{{ court.id }}">{{ court.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-calendar-range me-1"></i>{% trans "Date Range" %}
+                        </label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="date" name="date_from" id="dateFrom" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6">
+                                <input type="date" name="date_to" id="dateTo" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Case Type -->
+                    <div class="mb-3">
+                        <label for="filter_case_type" class="form-label fw-semibold">
+                            <i class="bi bi-file-text me-1"></i>{% trans "Case Type" %}
+                        </label>
+                        <select name="filter_case_type" id="filter_case_type" class="form-select search-filter">
+                            <option value="">{% trans "All Types" %}</option>
+                            {% for type_value, type_label in case_types %}
+                            <option value="{{ type_value }}">{{ type_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Tags -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-tags me-1"></i>{% trans "Legal Areas" %}
+                        </label>
+                        {% for tag in tags %}
+                        <div class="filter-option">
+                            <input type="checkbox" id="tag_{{ tag.id }}" name="filter_tags" value="{{ tag.id }}" class="search-filter" data-label="{{ tag.name }}">
+                            <label for="tag_{{ tag.id }}">{{ tag.name }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Search Button -->
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-2"></i>{% trans "Search Cases" %}
+                    </button>
+                </form>
+            </div>
+
+            <!-- Active Filters -->
+            <div class="mt-3">
+                <h6 class="mb-2">{% trans "Active Filters" %}</h6>
+                <div id="activeFilters" class="active-filters">
+                    <span class="text-muted small">{% trans "No filters applied" %}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        <div class="col-xl-9">
+            <!-- Search History -->
+            {% if recent_searches %}
+            <div class="search-history mb-4">
+                <div class="search-history-title">
+                    <span>
+                        <i class="bi bi-clock-history me-2"></i>{% trans "Recent Searches" %}
+                    </span>
+                    <button class="btn btn-sm btn-outline-secondary" id="clearHistory">
+                        {% trans "Clear" %}
+                    </button>
+                </div>
+                {% for search in recent_searches %}
+                <div class="search-history-item">
+                    <a href="#" class="search-history-query" data-query="{{ search.query_text }}">
+                        {{ search.query_text|truncatechars:60 }}
+                    </a>
+                    <span class="search-history-time">{{ search.timestamp|timesince }} {% trans "ago" %}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Results Header -->
+            <div class="search-results-header" id="resultsHeader" style="display: none;">
+                <div class="search-results-info">
+                    <h5 class="mb-1">{% trans "Search Results" %}</h5>
+                    <p class="text-muted mb-0">
+                        <span id="resultsCount">0</span> {% trans "results found" %}
+                        {% if query %}for <strong>"{{ query }}"</strong>{% endif %}
+                    </p>
+                </div>
+                <div class="search-results-actions">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-sort-down me-1"></i>{% trans "Sort by" %}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" data-sort="relevance">{% trans "Relevance" %}</a></li>
+                            <li><a class="dropdown-item" href="#" data-sort="date">{% trans "Date (Newest)" %}</a></li>
+                            <li><a class="dropdown-item" href="#" data-sort="citations">{% trans "Most Cited" %}</a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" id="exportResults">
+                        <i class="bi bi-download me-1"></i>{% trans "Export" %}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results List -->
+            <div id="searchResults">
+                <!-- Initial State -->
+                <div class="text-center py-5">
+                    <i class="bi bi-search display-1 text-muted mb-3"></i>
+                    <h4>{% trans "Start Your Legal Research" %}</h4>
+                    <p class="text-muted mb-4">
+                        {% trans "Enter search terms above to find relevant cases, statutes, and legal precedents" %}
+                    </p>
+
+                    <!-- Suggested Searches -->
+                    <div class="row g-3 mt-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">{% trans "Contract Law" %}</h6>
+                                    <p class="card-text small text-muted">{% trans "Breach of contract cases and precedents" %}</p>
+                                    <button class="btn btn-sm btn-outline-primary suggested-search" data-query="contract breach">
+                                        {% trans "Search" %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">{% trans "Property Disputes" %}</h6>
+                                    <p class="card-text small text-muted">{% trans "Landmark property law judgments" %}</p>
+                                    <button class="btn btn-sm btn-outline-primary suggested-search" data-query="property dispute">
+                                        {% trans "Search" %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">{% trans "Commercial Law" %}</h6>
+                                    <p class="card-text small text-muted">{% trans "Business and commercial disputes" %}</p>
+                                    <button class="btn btn-sm btn-outline-primary suggested-search" data-query="commercial dispute">
+                                        {% trans "Search" %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">{% trans "Family Law" %}</h6>
+                                    <p class="card-text small text-muted">{% trans "Family and marriage law cases" %}</p>
+                                    <button class="btn btn-sm btn-outline-primary suggested-search" data-query="family law">
+                                        {% trans "Search" %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="searchLoading" class="text-center py-5" style="display: none;">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">{% trans "Searching..." %}</span>
+                </div>
+                <p class="text-muted">{% trans "Searching through legal database..." %}</p>
+            </div>
+
+            <!-- No Results -->
+            <div id="noResults" class="no-results" style="display: none;">
+                <i class="bi bi-search no-results-icon"></i>
+                <h5 class="no-results-title">{% trans "No Results Found" %}</h5>
+                <p class="no-results-message">
+                    {% trans "We couldn't find any cases matching your search criteria. Try adjusting your search terms or filters." %}
+                </p>
+                <div class="no-results-actions">
+                    <button class="btn btn-outline-primary" id="clearFilters">
+                        {% trans "Clear Filters" %}
+                    </button>
+                    <button class="btn btn-primary" id="newSearch">
+                        {% trans "New Search" %}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div id="searchPagination" class="search-pagination" style="display: none;">
+                <!-- Pagination will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Filters Modal -->
+<div class="modal fade" id="advancedFiltersModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-funnel me-2"></i>{% trans "Advanced Search Filters" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">{% trans "Judge Name" %}</label>
+                        <input type="text" class="form-control" placeholder="Enter judge name">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{% trans "Act/Section" %}</label>
+                        <input type="text" class="form-control" placeholder="e.g., Indian Contract Act, Section 73">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{% trans "Citation" %}</label>
+                        <input type="text" class="form-control" placeholder="e.g., 2023 SCC 123">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{% trans "Party Names" %}</label>
+                        <input type="text" class="form-control" placeholder="Enter party names">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">{% trans "Legal Principles" %}</label>
+                        <textarea class="form-control" rows="3" placeholder="Enter specific legal principles to search for"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-primary" id="applyAdvancedFilters">
+                    {% trans "Apply Filters" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/search.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize search functionality
+    if (window.CourtVisionPro && window.CourtVisionPro.Search) {
+        window.CourtVisionPro.Search.init();
+    }
+
+    // Suggested search buttons
+    document.querySelectorAll('.suggested-search').forEach(button => {
+        button.addEventListener('click', function() {
+            const query = this.dataset.query;
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = query;
+                searchInput.focus();
+            }
+        });
+    });
+
+    // Recent search history clicks
+    document.querySelectorAll('.search-history-query').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const query = this.dataset.query;
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = query;
+                // Trigger search
+                document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    });
+
+    // Advanced filters modal
+    const toggleAdvancedBtn = document.getElementById('toggleAdvancedSearch');
+    const advancedFiltersModal = new bootstrap.Modal(document.getElementById('advancedFiltersModal'));
+
+    if (toggleAdvancedBtn) {
+        toggleAdvancedBtn.addEventListener('click', function() {
+            advancedFiltersModal.show();
+        });
+    }
+
+    // Clear search history
+    const clearHistoryBtn = document.getElementById('clearHistory');
+    if (clearHistoryBtn) {
+        clearHistoryBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear your search history?')) {
+                // Clear history via AJAX
+                fetch('/api/search/clear-history/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': window.CSRF_TOKEN
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        document.querySelector('.search-history').style.display = 'none';
+                    }
+                });
+            }
+        });
+    }
+
+    // Sort options
+    document.querySelectorAll('[data-sort]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sortBy = this.dataset.sort;
+            // Apply sorting to current search results
+            console.log('Sorting by:', sortBy);
+        });
+    });
+
+    // Export results
+    const exportBtn = document.getElementById('exportResults');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            // Export current search results
+            console.log('Exporting search results...');
+        });
+    }
+
+    // Clear filters
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            // Clear all search filters
+            document.querySelectorAll('.search-filter').forEach(filter => {
+                if (filter.type === 'checkbox') {
+                    filter.checked = false;
+                } else {
+                    filter.value = '';
+                }
+            });
+            // Update active filters display
+            if (window.CourtVisionPro && window.CourtVisionPro.Search) {
+                window.CourtVisionPro.Search.updateActiveFilters();
+            }
+        });
+    }
+
+    // New search
+    const newSearchBtn = document.getElementById('newSearch');
+    if (newSearchBtn) {
+        newSearchBtn.addEventListener('click', function() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchInput').focus();
+            document.getElementById('resultsHeader').style.display = 'none';
+            document.getElementById('searchResults').style.display = 'block';
+            document.getElementById('searchPagination').style.display = 'none';
+        });
+    }
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + K to focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }
+
+        // Escape to clear search
+        if (e.key === 'Escape') {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && document.activeElement === searchInput) {
+                searchInput.value = '';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
