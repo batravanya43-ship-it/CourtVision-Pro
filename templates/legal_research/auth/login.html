@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load i18n static %}
+{% load widget_tweaks %}
+
+{% block title %}{% trans "Login - CourtVision Pro" %}{% endblock %}
+
+<body data-page="login">
+{% block content %}
+<div class="container-fluid vh-100">
+    <div class="row h-100">
+        <!-- Left side - Branding and Information -->
+        <div class="col-lg-6 d-none d-lg-block bg-primary text-white p-5">
+            <div class="h-100 d-flex flex-column justify-content-center">
+                <div class="text-center mb-5">
+                    <i class="bi bi-balance-scale display-1 mb-4"></i>
+                    <h1 class="display-4 fw-bold mb-3">{% trans "CourtVision Pro" %}</h1>
+                    <p class="lead mb-4">{% trans "AI-Driven Research Engine for Commercial Courts" %}</p>
+                </div>
+
+                <div class="row g-4 mb-5">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-search fs-4 me-3"></i>
+                            <div>
+                                <h5 class="mb-1">{% trans "Advanced Search" %}</h5>
+                                <small class="opacity-75">{% trans "AI-powered legal research" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-graph-up fs-4 me-3"></i>
+                            <div>
+                                <h5 class="mb-1">{% trans "Analytics" %}</h5>
+                                <small class="opacity-75">{% trans "Predictive insights" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-shield-check fs-4 me-3"></i>
+                            <div>
+                                <h5 class="mb-1">{% trans "Secure" %}</h5>
+                                <small class="opacity-75">{% trans "Judicial data protection" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-translate fs-4 me-3"></i>
+                            <div>
+                                <h5 class="mb-1">{% trans "Multilingual" %}</h5>
+                                <small class="opacity-75">{% trans "Support for regional languages" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto">
+                    <div class="alert alert-light text-dark">
+                        <h6><i class="bi bi-info-circle me-2"></i>{% trans "Ethical Notice" %}</h6>
+                        <p class="mb-2 small">{% trans "This system is designed to assist judicial officers in their research and decision-making process. It is a facilitation tool, not a replacement for judicial judgment." %}</p>
+                        <p class="mb-0 small"><strong>{% trans "Final decisions remain the sole responsibility of the judicial officer." %}</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right side - Login Form -->
+        <div class="col-lg-6 d-flex align-items-center justify-content-center p-4">
+            <div class="w-100" style="max-width: 400px;">
+                <div class="text-center mb-4">
+                    <div class="d-lg-none mb-4">
+                        <i class="bi bi-balance-scale display-4 text-primary"></i>
+                        <h2 class="fw-bold mt-2">{% trans "CourtVision Pro" %}</h2>
+                        <p class="text-muted">{% trans "AI Legal Research Engine" %}</p>
+                    </div>
+                    <h3 class="mb-3">{% trans "Welcome Back" %}</h3>
+                    <p class="text-muted">{% trans "Sign in to access your legal research dashboard" %}</p>
+                </div>
+
+                <!-- Language Selector -->
+                <div class="mb-4">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" id="languageDropdown" data-bs-toggle="dropdown">
+                            <i class="bi bi-translate me-2"></i>
+                            {% get_current_language as LANGUAGE_CODE %}
+                            {% get_available_languages as LANGUAGES %}
+                            {% for lang_code, lang_name in LANGUAGES %}
+                                {% if lang_code == LANGUAGE_CODE %}{{ lang_name }}{% endif %}
+                            {% endfor %}
+                        </button>
+                        <ul class="dropdown-menu w-100">
+                            {% get_current_language as LANGUAGE_CODE %}
+                            {% get_available_languages as LANGUAGES %}
+                            {% for lang_code, lang_name in LANGUAGES %}
+                                <li>
+                                    <form action="{% url 'set_language' %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input name="language" type="hidden" value="{{ lang_code }}">
+                                        <input name="next" type="hidden" value="{{ request.path }}">
+                                        <button type="submit" class="dropdown-item {% if lang_code == LANGUAGE_CODE %}active{% endif %}">
+                                            {{ lang_name }}
+                                        </button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <form method="post" id="loginForm">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                            <i class="bi bi-person me-1"></i>{% trans "Username" %}
+                        </label>
+                        {{ form.username|add_class:"form-control form-control-lg"|attr:"placeholder:Enter your username" }}
+                        {% if form.username.errors %}
+                            <div class="form-text text-danger">
+                                {% for error in form.username.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">
+                            <i class="bi bi-lock me-1"></i>{% trans "Password" %}
+                        </label>
+                        <div class="input-group">
+                            {{ form.password|add_class:"form-control form-control-lg"|attr:"placeholder:Enter your password"|attr:"id:passwordInput" }}
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <i class="bi bi-eye" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                        {% if form.password.errors %}
+                            <div class="form-text text-danger">
+                                {% for error in form.password.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">
+                                {% trans "Remember me" %}
+                            </label>
+                        </div>
+                        <a href="#" class="text-decoration-none">{% trans "Forgot password?" %}</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Sign In" %}
+                    </button>
+                </form>
+
+                <!-- Demo Information -->
+                <div class="alert alert-info" role="alert">
+                    <h6><i class="bi bi-info-circle me-2"></i>{% trans "Demo Access" %}</h6>
+                    <p class="mb-2 small">{% trans "For demonstration purposes, you can use:" %}</p>
+                    <div class="small">
+                        <strong>{% trans "Username:" %}</strong> admin<br>
+                        <strong>{% trans "Password:" %}</strong> admin123
+                    </div>
+                    <p class="mb-0 small mt-2">{% trans "Or use any Django superuser credentials from your system." %}</p>
+                </div>
+
+                <!-- System Status -->
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-circle-fill text-success me-1"></i>
+                        {% trans "All systems operational" %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Access Cards (Mobile Only) -->
+<div class="d-lg-none container mt-4">
+    <div class="row g-3">
+        <div class="col-6">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="bi bi-search fs-2 text-primary mb-2"></i>
+                    <h6>{% trans "Smart Search" %}</h6>
+                    <small class="text-muted">{% trans "AI-powered" %}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="bi bi-graph-up fs-2 text-success mb-2"></i>
+                    <h6>{% trans "Analytics" %}</h6>
+                    <small class="text-muted">{% trans "Predictions" %}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="bi bi-shield-check fs-2 text-warning mb-2"></i>
+                    <h6>{% trans "Secure" %}</h6>
+                    <small class="text-muted">{% trans "Protected" %}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="bi bi-translate fs-2 text-info mb-2"></i>
+                    <h6>{% trans "Multi-Lingual" %}</h6>
+                    <small class="text-muted">{% trans "Inclusive" %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle password visibility
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('passwordInput');
+    const toggleIcon = document.getElementById('toggleIcon');
+
+    if (togglePassword && passwordInput && toggleIcon) {
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            toggleIcon.classList.toggle('bi-eye');
+            toggleIcon.classList.toggle('bi-eye-slash');
+        });
+    }
+
+    // Form validation
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            const username = loginForm.querySelector('input[name="username"]').value.trim();
+            const password = loginForm.querySelector('input[name="password"]').value.trim();
+
+            if (!username || !password) {
+                e.preventDefault();
+                alert('Please enter both username and password');
+                return false;
+            }
+        });
+    }
+
+    // Auto-focus username field
+    const usernameField = document.querySelector('input[name="username"]');
+    if (usernameField) {
+        usernameField.focus();
+    }
+
+    // Add loading state to submit button
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        loginForm.addEventListener('submit', function() {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% load i18n static %}
+
+{% block title %}{% trans "Dashboard - CourtVision Pro" %}{% endblock %}
+
+<body data-page="dashboard">
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">
+                        {% trans "Welcome back" %}, {{ user.get_full_name|default:user.username }}!
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {% trans "Here's your legal research overview for" %} {% now "F j, Y" %}
+                    </p>
+                </div>
+                <div>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-calendar3 me-2"></i>{% trans "Last 30 Days" %}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">{% trans "Last 7 Days" %}</a></li>
+                            <li><a class="dropdown-item" href="#">{% trans "Last 30 Days" %}</a></li>
+                            <li><a class="dropdown-item" href="#">{% trans "Last 90 Days" %}</a></li>
+                            <li><a class="dropdown-item" href="#">{% trans "This Year" %}</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-widget">
+                <div class="widget-icon primary">
+                    <i class="bi bi-search"></i>
+                </div>
+                <div class="widget-number">{{ total_searches }}</div>
+                <div class="widget-label">{% trans "Total Searches" %}</div>
+                <div class="mt-2">
+                    <small class="text-success">
+                        <i class="bi bi-arrow-up"></i> 12% {% trans "from last month" %}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-widget widget-success">
+                <div class="widget-icon success">
+                    <i class="bi bi-bookmark"></i>
+                </div>
+                <div class="widget-number">{{ saved_cases }}</div>
+                <div class="widget-label">{% trans "Cases Saved" %}</div>
+                <div class="mt-2">
+                    <small class="text-success">
+                        <i class="bi bi-arrow-up"></i> 8% {% trans "from last month" %}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-widget widget-warning">
+                <div class="widget-icon warning">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+                <div class="widget-number">{{ user_notes }}</div>
+                <div class="widget-label">{% trans "Notes Created" %}</div>
+                <div class="mt-2">
+                    <small class="text-danger">
+                        <i class="bi bi-arrow-down"></i> 3% {% trans "from last month" %}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-widget widget-info">
+                <div class="widget-icon info">
+                    <i class="bi bi-briefcase"></i>
+                </div>
+                <div class="widget-number">{{ active_suits|length }}</div>
+                <div class="widget-label">{% trans "Active Suits" %}</div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="bi bi-dash"></i> {% trans "No change" %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-xl-8">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning-charge me-2"></i>{% trans "Quick Actions" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for link in quick_links %}
+                        <div class="col-md-6 col-lg-3">
+                            <a href="{{ link.url }}" class="quick-link-card text-decoration-none">
+                                <div class="quick-link-icon {{ link.color }}">
+                                    <i class="bi {{ link.icon }}"></i>
+                                </div>
+                                <div class="quick-link-title">{{ link.title }}</div>
+                                <div class="quick-link-description">{% trans "Get started" %}</div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Search Activity -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history me-2"></i>{% trans "Recent Searches" %}
+                    </h5>
+                    <a href="{% url 'legal_research:search' %}" class="btn btn-sm btn-outline-primary">
+                        {% trans "New Search" %}
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_searches %}
+                        {% for search in recent_searches %}
+                        <div class="recent-activity-item">
+                            <div class="d-flex align-items-center">
+                                <div class="activity-icon search">
+                                    <i class="bi bi-search"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">
+                                        <a href="#" class="text-decoration-none">{{ search.query_text|truncatechars:80 }}</a>
+                                    </div>
+                                    <div class="activity-meta">
+                                        {{ search.results_count }} results •
+                                        {{ search.timestamp|timesince }} {% trans "ago" %}
+                                    </div>
+                                </div>
+                                <div class="activity-actions">
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-search display-4 text-muted mb-3"></i>
+                            <h5>{% trans "No recent searches" %}</h5>
+                            <p class="text-muted">{% trans "Start searching for cases to see your activity here" %}</p>
+                            <a href="{% url 'legal_research:search' %}" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i>{% trans "Start Searching" %}
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Research Trends -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2"></i>{% trans "Research Trends" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>{% trans "Search Activity This Week" %}</h6>
+                            <div class="trend-chart">
+                                <div class="d-flex align-items-end justify-content-between" style="height: 120px;">
+                                    <div class="text-center" style="width: 14%;">
+                                        <div class="bg-primary rounded" style="height: 40%;"></div>
+                                        <small class="d-block mt-1">Mon</small>
+                                    </div>
+                                    <div class="text-center" style="width: 14%;">
+                                        <div class="bg-primary rounded" style="height: 60%;"></div>
+                                        <small class="d-block mt-1">Tue</small>
+                                    </div>
+                                    <div class="text-center" style="width: 14%;">
+                                        <div class="bg-primary rounded" style="height: 80%;"></div>
+                                        <small class="d-block mt-1">Wed</small>
+                                    </div>
+                                    <div class="text-center" style="width: 14%;">
+                                        <div class="bg-primary rounded" style="height: 45%;"></div>
+                                        <small class="d-block mt-1">Thu</small>
+                                    </div>
+                                    <div class="text-center" style="width: 14%;">
+                                        <div class="bg-primary rounded" style="height: 90%;"></div>
+                                        <small class="d-block mt-1">Fri</small>
+                                    </div>
+                                    <div class="text-center" style="width: 14%;">
+                                        <div class="bg-secondary rounded" style="height: 30%;"></div>
+                                        <small class="d-block mt-1">Sat</small>
+                                    </div>
+                                    <div class="text-center" style="width: 14%;">
+                                        <div class="bg-secondary rounded" style="height: 20%;"></div>
+                                        <small class="d-block mt-1">Sun</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>{% trans "Top Research Categories" %}</h6>
+                            <div class="space-y-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Contract Law</span>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 100px; height: 8px;">
+                                            <div class="progress-bar bg-primary" style="width: 85%"></div>
+                                        </div>
+                                        <small>85%</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Property Law</span>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 100px; height: 8px;">
+                                            <div class="progress-bar bg-success" style="width: 65%"></div>
+                                        </div>
+                                        <small>65%</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Commercial Disputes</span>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 100px; height: 8px;">
+                                            <div class="progress-bar bg-warning" style="width: 70%"></div>
+                                        </div>
+                                        <small>70%</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Family Law</span>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 100px; height: 8px;">
+                                            <div class="progress-bar bg-info" style="width: 45%"></div>
+                                        </div>
+                                        <small>45%</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-xl-4">
+            <!-- User Profile Summary -->
+            {% if user_profile %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person-circle me-2"></i>{% trans "Profile Summary" %}
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <div class="bg-primary rounded-circle mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="bi bi-person-fill text-white" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <h6>{{ user.get_full_name|default:user.username }}</h6>
+                    <p class="text-muted">{{ user_profile.designation }}</p>
+                    {% if user_profile.high_court %}
+                    <p class="small">
+                        <i class="bi bi-building me-1"></i>{{ user_profile.high_court.name }}
+                    </p>
+                    {% endif %}
+                    <a href="{% url 'legal_research:profile' %}" class="btn btn-sm btn-outline-primary">
+                        {% trans "View Profile" %}
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Active Suits -->
+            {% if active_suits %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-briefcase me-2"></i>{% trans "Active Suits" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for suit in active_suits %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <div class="fw-semibold">{{ suit.name }}</div>
+                            <small class="text-muted">{{ suit.suit_type|title }}</small>
+                        </div>
+                        <span class="badge bg-{{ suit.priority_level|default:'secondary' }}">
+                            {{ suit.priority_level|default:'Medium'|title }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                    <a href="{% url 'legal_research:customization' %}" class="btn btn-sm btn-outline-primary w-100">
+                        {% trans "Manage Suits" %}
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- System Status -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-activity me-2"></i>{% trans "System Status" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="system-status-item">
+                        <div class="d-flex align-items-center">
+                            <div class="status-indicator operational"></div>
+                            <span class="system-status-name">{% trans "Search Engine" %}</span>
+                        </div>
+                        <span class="system-status-value text-success">{% trans "Operational" %}</span>
+                    </div>
+                    <div class="system-status-item">
+                        <div class="d-flex align-items-center">
+                            <div class="status-indicator operational"></div>
+                            <span class="system-status-name">{% trans "AI Service" %}</span>
+                        </div>
+                        <span class="system-status-value text-success">{% trans "Operational" %}</span>
+                    </div>
+                    <div class="system-status-item">
+                        <div class="d-flex align-items-center">
+                            <div class="status-indicator operational"></div>
+                            <span class="system-status-name">{% trans "Database" %}</span>
+                        </div>
+                        <span class="system-status-value text-success">{% trans "Operational" %}</span>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <small class="text-muted">
+                            {% trans "System Uptime" %}: <strong>{{ system_status.uptime }}</strong>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Help -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-question-circle me-2"></i>{% trans "Quick Help" %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>{% trans "Need assistance?" %}</h6>
+                        <p class="small text-muted">
+                            {% trans "Find answers to common questions or contact our support team." %}
+                        </p>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'legal_research:help' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-book me-2"></i>{% trans "Browse Help" %}
+                        </a>
+                        <button class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-chat-dots me-2"></i>{% trans "Contact Support" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Simulate real-time updates
+    setInterval(function() {
+        // Update search count (mock)
+        const searchCount = document.querySelector('.widget-number');
+        if (searchCount && Math.random() > 0.8) {
+            const currentValue = parseInt(searchCount.textContent);
+            searchCount.textContent = currentValue + 1;
+
+            // Show notification
+            showNotification('New search completed', 'info');
+        }
+    }, 30000); // Every 30 seconds
+
+    // Period filter handler
+    const periodDropdown = document.querySelector('.dropdown-item');
+    if (periodDropdown) {
+        periodDropdown.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Reload dashboard with new period
+            window.location.reload();
+        });
+    }
+
+    // Quick action click handlers
+    document.querySelectorAll('.quick-link-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Add ripple effect
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            this.appendChild(ripple);
+
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+});
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+</script>
+
+<style>
+.recent-activity-item {
+    transition: background-color 0.2s ease;
+}
+
+.recent-activity-item:hover {
+    background-color: #f8f9fa;
+    margin: 0 -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.quick-link-card:hover {
+    transform: translateY(-2px);
+}
+
+.trend-chart > div > div {
+    transition: all 0.3s ease;
+}
+
+.trend-chart > div:hover > div {
+    opacity: 0.8;
+}
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.6);
+    transform: scale(0);
+    animation: ripple-animation 0.6s ease-out;
+    pointer-events: none;
+}
+
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+</style>
+{% endblock %}
