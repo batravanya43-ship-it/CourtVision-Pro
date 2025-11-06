@@ -1,0 +1,411 @@
+{% extends 'base.html' %}
+{% load i18n static %}
+
+{% block title %}{% trans "CourtVision Pro - AI Legal Research Engine" %}{% endblock %}
+
+<body data-page="landing">
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <h1 class="display-4 fw-bold mb-4">
+                        {% trans "AI-Driven Research Engine for" %}
+                        <span class="text-warning">{% trans "Commercial Courts" %}</span>
+                    </h1>
+                    <p class="lead mb-4">
+                        {% trans "Empowering judicial officers with advanced legal research tools, AI-powered case analysis, and predictive insights while maintaining the highest standards of judicial independence and integrity." %}
+                    </p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="{% url 'legal_research:login' %}" class="btn btn-light btn-lg px-4">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Sign In" %}
+                        </a>
+                        <button class="btn btn-outline-light btn-lg px-4" data-bs-toggle="modal" data-bs-target="#demoModal">
+                            <i class="bi bi-play-circle me-2"></i>{% trans "Watch Demo" %}
+                        </button>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="row mt-5 pt-5">
+                        <div class="col-4">
+                            <div class="text-center">
+                                <div class="display-6 fw-bold">10K+</div>
+                                <div class="small">{% trans "Cases Analyzed" %}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <div class="display-6 fw-bold">95%</div>
+                                <div class="small">{% trans "Accuracy Rate" %}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <div class="display-6 fw-bold">24/7</div>
+                                <div class="small">{% trans "Available" %}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-illustration text-center">
+                    <i class="bi bi-balance-scale display-1 mb-4 opacity-75"></i>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="bg-white bg-opacity-10 rounded-3 p-3 mb-3">
+                                <i class="bi bi-search fs-1 mb-2"></i>
+                                <h6>{% trans "Smart Search" %}</h6>
+                                <p class="small mb-0 opacity-75">{% trans "AI-powered legal research" %}</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-white bg-opacity-10 rounded-3 p-3 mb-3">
+                                <i class="bi bi-graph-up fs-1 mb-2"></i>
+                                <h6>{% trans "Analytics" %}</h6>
+                                <p class="small mb-0 opacity-75">{% trans "Predictive insights" %}</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-white bg-opacity-10 rounded-3 p-3">
+                                <i class="bi bi-shield-check fs-1 mb-2"></i>
+                                <h6>{% trans "Secure" %}</h6>
+                                <p class="small mb-0 opacity-75">{% trans "Judicial data protection" %}</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-white bg-opacity-10 rounded-3 p-3">
+                                <i class="bi bi-translate fs-1 mb-2"></i>
+                                <h6>{% trans "Multilingual" %}</h6>
+                                <p class="small mb-0 opacity-75">{% trans "Regional language support" %}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-3">{% trans "Powerful Features for Judicial Excellence" %}</h2>
+            <p class="lead text-muted">{% trans "Comprehensive tools designed specifically for the modern judicial officer" %}</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-primary bg-opacity-10 text-primary rounded-circle mb-3 mx-auto">
+                            <i class="bi bi-search fs-1"></i>
+                        </div>
+                        <h5 class="card-title">{% trans "Advanced Case Search" %}</h5>
+                        <p class="card-text text-muted">
+                            {% trans "Search through thousands of legal cases with AI-powered suggestions, filters, and relevance ranking. Find precedents and statutes instantly." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-success bg-opacity-10 text-success rounded-circle mb-3 mx-auto">
+                            <i class="bi bi-cpu fs-1"></i>
+                        </div>
+                        <h5 class="card-title">{% trans "AI-Generated Summaries" %}</h5>
+                        <p class="card-text text-muted">
+                            {% trans "Get concise, accurate summaries of complex cases with extracted legal principles, key points, and potential implications." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-info bg-opacity-10 text-info rounded-circle mb-3 mx-auto">
+                            <i class="bi bi-graph-up-arrow fs-1"></i>
+                        </div>
+                        <h5 class="card-title">{% trans "Predictive Analytics" %}</h5>
+                        <p class="card-text text-muted">
+                            {% trans "Leverage machine learning to identify trends, predict outcomes, and gain insights from historical case data." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-warning bg-opacity-10 text-warning rounded-circle mb-3 mx-auto">
+                            <i class="bi bi-sliders fs-1"></i>
+                        </div>
+                        <h5 class="card-title">{% trans "Customization Panel" %}</h5>
+                        <p class="card-text text-muted">
+                            {% trans "Personalize your research experience with suit-specific preferences, jurisdiction emphasis, and language settings." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-danger bg-opacity-10 text-danger rounded-circle mb-3 mx-auto">
+                            <i class="bi bi-upload fs-1"></i>
+                        </div>
+                        <h5 class="card-title">{% trans "Data Import/Export" %}</h5>
+                        <p class="card-text text-muted">
+                            {% trans "Easily import case documents, export research findings, and manage your legal database efficiently." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <div class="feature-icon bg-secondary bg-opacity-10 text-secondary rounded-circle mb-3 mx-auto">
+                            <i class="bi bi-translate fs-1"></i>
+                        </div>
+                        <h5 class="card-title">{% trans "Multilingual Support" %}</h5>
+                        <p class="card-text text-muted">
+                            {% trans "Access legal research in English, Hindi, Tamil, Telugu, and other regional languages for inclusive judicial access." %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Trust Section -->
+<section class="trust-section bg-light py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h2 class="display-6 fw-bold mb-4">{% trans "Built on Judicial Ethics and Independence" %}</h2>
+                <p class="lead mb-4">
+                    {% trans "CourtVision Pro is designed as a facilitation tool, never a replacement for judicial judgment. We uphold the constitutional principle of judicial independence." %}
+                </p>
+                <div class="d-flex gap-3 mb-4">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-shield-check text-success fs-2"></i>
+                    </div>
+                    <div>
+                        <h5>{% trans "Ethical AI Implementation" %}</h5>
+                        <p class="mb-0">{% trans "Our AI assists, augments, and supports judicial decision-making without compromising judicial independence." %}</p>
+                    </div>
+                </div>
+                <div class="d-flex gap-3 mb-4">
+                    <div class="flex-shrink-0">
+                        <i class="bi bi-lock text-primary fs-2"></i>
+                    </div>
+                    <div>
+                        <h5>{% trans "Secure & Confidential" %}</h5>
+                        <p class="mb-0">{% trans "Military-grade encryption and strict data protection ensure complete confidentiality of judicial research." %}</p>
+                    </div>
+                </div>
+                <a href="{% url 'legal_research:help' %}" class="btn btn-outline-primary">
+                    {% trans "Learn About Our Ethics" %}
+                    <i class="bi bi-arrow-right ms-2"></i>
+                </a>
+            </div>
+            <div class="col-lg-6">
+                <div class="bg-white rounded-3 shadow-sm p-4">
+                    <h5 class="mb-3">{% trans "Key Principles" %}</h5>
+                    <div class="accordion" id="principlesAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#principle1">
+                                    {% trans "Judicial Independence" %}
+                                </button>
+                            </h2>
+                            <div id="principle1" class="accordion-collapse collapse show" data-bs-parent="#principlesAccordion">
+                                <div class="accordion-body">
+                                    {% trans "Final judgments remain the sole responsibility of judicial officers. Our system provides information, not decisions." %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#principle2">
+                                    {% trans "Transparency" %}
+                                </button>
+                            </h2>
+                            <div id="principle2" class="accordion-collapse collapse" data-bs-parent="#principlesAccordion">
+                                <div class="accordion-body">
+                                    {% trans "All AI-generated insights include confidence scores and source references for complete transparency." %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#principle3">
+                                    {% trans "Accountability" %}
+                                </button>
+                            </h2>
+                            <div id="principle3" class="accordion-collapse collapse" data-bs-parent="#principlesAccordion">
+                                <div class="accordion-body">
+                                    {% trans "Regular audits and bias detection ensure our AI systems remain fair and accountable." %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section bg-primary text-white py-5">
+    <div class="container text-center">
+        <h2 class="display-6 fw-bold mb-3">{% trans "Ready to Transform Your Legal Research?" %}</h2>
+        <p class="lead mb-4">
+            {% trans "Join judicial officers across India who are already using CourtVision Pro for more efficient, accurate legal research." %}
+        </p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="{% url 'legal_research:login' %}" class="btn btn-light btn-lg px-4">
+                <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Get Started Now" %}
+            </a>
+            <button class="btn btn-outline-light btn-lg px-4" data-bs-toggle="modal" data-bs-target="#contactModal">
+                <i class="bi bi-telephone me-2"></i>{% trans "Request Demo" %}
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Demo Modal -->
+<div class="modal fade" id="demoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Platform Demo" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <i class="bi bi-play-circle display-1 text-primary mb-3"></i>
+                <h4>{% trans "See CourtVision Pro in Action" %}</h4>
+                <p class="text-muted">
+                    {% trans "Watch a comprehensive demo of how our AI-powered legal research engine can transform your judicial workflow." %}
+                </p>
+                <div class="ratio ratio-16x9 bg-light rounded">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <div>
+                            <i class="bi bi-camera-video display-1 text-muted"></i>
+                            <p class="text-muted mt-2">{% trans "Demo video would play here" %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+                <a href="{% url 'legal_research:login' %}" class="btn btn-primary">{% trans "Try It Now" %}</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Request a Demo" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="demoRequestForm">
+                    <div class="mb-3">
+                        <label for="demoName" class="form-label">{% trans "Full Name" %}</label>
+                        <input type="text" class="form-control" id="demoName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="demoEmail" class="form-label">{% trans "Email Address" %}</label>
+                        <input type="email" class="form-control" id="demoEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="demoCourt" class="form-label">{% trans "High Court" %}</label>
+                        <select class="form-select" id="demoCourt" required>
+                            <option value="">{% trans "Select your court" %}</option>
+                            <option value="delhi">{% trans "Delhi High Court" %}</option>
+                            <option value="mumbai">{% trans "Mumbai High Court" %}</option>
+                            <option value="chennai">{% trans "Chennai High Court" %}</option>
+                            <option value="kolkata">{% trans "Kolkata High Court" %}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="demoMessage" class="form-label">{% trans "Message (Optional)" %}</label>
+                        <textarea class="form-control" id="demoMessage" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">{% trans "Request Demo" %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Demo request form
+    const demoForm = document.getElementById('demoRequestForm');
+    if (demoForm) {
+        demoForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Thank you for your interest! We will contact you soon to schedule a demo.');
+            bootstrap.Modal.getInstance(document.getElementById('contactModal')).hide();
+        });
+    }
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.hero-section {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.feature-icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        min-height: auto;
+        padding: 3rem 0;
+    }
+
+    .display-4 {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}
