@@ -61,9 +61,9 @@ class SuitAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ['name', 'color_display', 'description']
+    list_display = ['name', 'color', 'color_display', 'description']  # added 'color'
     search_fields = ['name', 'description']
-    list_editable = ['color']
+    list_editable = ['color']  # now valid
 
     def color_display(self, obj):
         return format_html(

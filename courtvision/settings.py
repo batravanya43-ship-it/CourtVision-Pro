@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
 
     # Third party apps
-    'bootstrap5',
+    'django_bootstrap5',
     'crispy_forms',
     'crispy_bootstrap5',
     'rest_framework',

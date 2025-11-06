@@ -1,6 +1,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
+from django.conf.urls.i18n import i18n_patterns
 
 app_name = 'legal_research'
 
@@ -42,7 +43,7 @@ urlpatterns = [
 
     # User profile and settings
     path('profile/', views.user_profile, name='profile'),
-    path('profile/update/', views.update_profile, name='update_profile'),
+    path('profile/update/', views.update_user_profile, name='update_profile'),
 
     # Help and ethical guidelines
     path('help/', views.help_page, name='help'),
