@@ -179,6 +179,47 @@ class Case(models.Model):
         ).exclude(id=self.id).distinct()[:limit]
         return related_cases
 
+    # AI processing tracking fields
+    ai_processed_at = models.DateTimeField(null=True, blank=True, verbose_name=_("AI Processed At"))
+    ai_model_version = models.CharField(max_length=50, blank=True, verbose_name=_("AI Model Version"))
+    ai_confidence_score = models.FloatField(null=True, blank=True, verbose_name=_("AI Confidence Score"))
+    ai_processing_status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ], default='pending', verbose_name=_("AI Processing Status"))
+    ai_error_log = models.TextField(blank=True, verbose_name=_("AI Error Log"))
+
+    # Ethical AI tracking
+    bias_detected = models.BooleanField(default=False, verbose_name=_("Bias Detected"))
+    human_review_required = models.BooleanField(default=False, verbose_name=_("Human Review Required"))
+    ethical_compliance_score = models.FloatField(null=True, blank=True, verbose_name=_("Ethical Compliance Score"))
+    audit_log_id = models.CharField(max_length=100, blank=True, verbose_name=_("Audit Log ID"))
+
+    # Data provenance
+    data_source = models.CharField(max_length=100, blank=True, verbose_name=_("Data Source"))
+    source_id = models.CharField(max_length=100, blank=True, verbose_name=_("Source ID"))
+    source_url = models.URLField(blank=True, verbose_name=_("Source URL"))
+    data_imported_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Data Imported At"))
+    data_quality_score = models.FloatField(null=True, blank=True, verbose_name=_("Data Quality Score"))
+
+    # Translation and multilingual support
+    translated_content = models.JSONField(default=dict, verbose_name=_("Translated Content"))
+    supported_languages = models.JSONField(default=list, verbose_name=_("Supported Languages"))
+    last_translated_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Last Translated At"))
+
+    # Search and relevance enhancement
+    search_vector = models.TextField(blank=True, verbose_name=_("Search Vector"))
+    embedding_vector = models.JSONField(default=list, verbose_name=_("Embedding Vector"))
+    last_indexed_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Last Indexed At"))
+
+    # Predictive analytics
+    predicted_outcome = models.JSONField(default=dict, verbose_name=_("Predicted Outcome"))
+    prediction_confidence = models.FloatField(null=True, blank=True, verbose_name=_("Prediction Confidence"))
+    prediction_made_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Prediction Made At"))
+    prediction_accuracy = models.FloatField(null=True, blank=True, verbose_name=_("Prediction Accuracy"))
+
     def generate_summary(self):
         """Generate AI summary (placeholder for actual AI integration)"""
         # This would integrate with an AI service in production
@@ -188,6 +229,65 @@ class Case(models.Model):
             'decision': 'Brief overview of the decision',
             'implications': 'Legal implications of this case'
         }
+
+    def get_ai_status_display(self):
+        """Get human-readable AI processing status"""
+        status_labels = {
+            'pending': 'Pending AI Processing',
+            'processing': 'AI Processing in Progress',
+            'completed': 'AI Processing Complete',
+            'failed': 'AI Processing Failed'
+        }
+        return status_labels.get(self.ai_processing_status, 'Unknown Status')
+
+    def requires_human_review(self):
+        """Check if case requires human review based on AI analysis"""
+        return (
+            self.human_review_required or
+            (self.ai_confidence_score is not None and self.ai_confidence_score < 0.6) or
+            self.bias_detected or
+            (self.ethical_compliance_score is not None and self.ethical_compliance_score < 0.8)
+        )
+
+    def get_translation(self, language_code='en'):
+        """Get translated content for specified language"""
+        if language_code == 'en':
+            return {
+                'title': self.title,
+                'headnotes': self.headnotes,
+                'case_text': self.case_text[:1000] + '...' if len(self.case_text) > 1000 else self.case_text
+            }
+
+        translations = self.translated_content.get(language_code, {})
+        return {
+            'title': translations.get('title', self.title),
+            'headnotes': translations.get('headnotes', self.headnotes),
+            'case_text': translations.get('case_text_preview', self.case_text[:1000] + '...' if len(self.case_text) > 1000 else self.case_text)
+        }
+
+    def update_ai_processing_status(self, status, error_message=None):
+        """Update AI processing status"""
+        self.ai_processing_status = status
+        if status == 'completed':
+            self.ai_processed_at = timezone.now()
+        elif status == 'failed' and error_message:
+            self.ai_error_log = error_message[:1000]  # Limit error log length
+        self.save(update_fields=['ai_processing_status', 'ai_processed_at', 'ai_error_log'])
+
+    def record_ai_prediction(self, prediction_data, confidence, model_version='v1.0'):
+        """Record AI prediction for this case"""
+        self.predicted_outcome = prediction_data
+        self.prediction_confidence = confidence
+        self.ai_model_version = model_version
+        self.prediction_made_at = timezone.now()
+        self.save(update_fields=['predicted_outcome', 'prediction_confidence', 'ai_model_version', 'prediction_made_at'])
+
+    def update_ethical_compliance(self, compliance_score, bias_detected=False, human_review_required=False):
+        """Update ethical compliance metrics"""
+        self.ethical_compliance_score = compliance_score
+        self.bias_detected = bias_detected
+        self.human_review_required = human_review_required
+        self.save(update_fields=['ethical_compliance_score', 'bias_detected', 'human_review_required'])
 
 
 class SearchHistory(models.Model):

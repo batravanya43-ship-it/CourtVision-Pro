@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from decouple import config
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -272,3 +273,137 @@ LOGGING = {
 
 # Create logs directory if it doesn't exist
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
+
+# AI/ML Infrastructure Settings
+AI_SETTINGS = {
+    # OpenAI Configuration
+    'OPENAI_API_KEY': config('OPENAI_API_KEY', default=''),
+    'OPENAI_MODEL': config('OPENAI_MODEL', default='gpt-4-turbo-preview'),
+    'OPENAI_MAX_TOKENS': config('OPENAI_MAX_TOKENS', default=2000, cast=int),
+    'OPENAI_TEMPERATURE': config('OPENAI_TEMPERATURE', default=0.1, cast=float),
+
+    # Search and Vector Database
+    'ELASTICSEARCH_HOST': config('ELASTICSEARCH_HOST', default='localhost:9200'),
+    'ELASTICSEARCH_INDEX_PREFIX': config('ELASTICSEARCH_INDEX_PREFIX', default='legal_cases'),
+    'VECTOR_DIMENSION': config('VECTOR_DIMENSION', default=384, cast=int),
+    'SEARCH_RESULTS_LIMIT': config('SEARCH_RESULTS_LIMIT', default=50, cast=int),
+
+    # Caching Configuration
+    'AI_CACHE_TIMEOUT': config('AI_CACHE_TIMEOUT', default=3600, cast=int),  # 1 hour
+    'SEARCH_CACHE_TIMEOUT': config('SEARCH_CACHE_TIMEOUT', default=1800, cast=int),  # 30 minutes
+    'TRANSLATION_CACHE_TIMEOUT': config('TRANSLATION_CACHE_TIMEOUT', default=86400, cast=int),  # 24 hours
+
+    # Model Storage
+    'MODEL_STORAGE_PATH': config('MODEL_STORAGE_PATH', default=BASE_DIR / 'models'),
+    'MODEL_AUTO_UPDATE': config('MODEL_AUTO_UPDATE', default=True, cast=bool),
+    'MODEL_UPDATE_INTERVAL': config('MODEL_UPDATE_INTERVAL', default=7, cast=int),  # days
+
+    # Ethical AI Settings
+    'AI_AUDIT_RETENTION_DAYS': config('AI_AUDIT_RETENTION_DAYS', default=2555, cast=int),  # 7 years
+    'BIAS_DETECTION_ENABLED': config('BIAS_DETECTION_ENABLED', default=True, cast=bool),
+    'HUMAN_REVIEW_THRESHOLD': config('HUMAN_REVIEW_THRESHOLD', default=0.6, cast=float),
+    'ETHICAL_COMPLIANCE_THRESHOLD': config('ETHICAL_COMPLIANCE_THRESHOLD', default=0.8, cast=float),
+
+    # Data Processing
+    'MAX_DOCUMENT_SIZE': config('MAX_DOCUMENT_SIZE', default=50 * 1024 * 1024, cast=int),  # 50MB
+    'BATCH_PROCESSING_SIZE': config('BATCH_PROCESSING_SIZE', default=10, cast=int),
+    'ASYNC_PROCESSING_ENABLED': config('ASYNC_PROCESSING_ENABLED', default=True, cast=bool),
+
+    # Language Support
+    'SUPPORTED_LANGUAGES': config('SUPPORTED_LANGUAGES', default='en,hi,ta,te', cast=lambda v: [s.strip() for s in v.split(',')]),
+    'DEFAULT_LANGUAGE': config('DEFAULT_LANGUAGE', default='en'),
+    'TRANSLATION_ENABLED': config('TRANSLATION_ENABLED', default=True, cast=bool),
+
+    # Data Source Configuration
+    'DATA_IMPORT_ENABLED': config('DATA_IMPORT_ENABLED', default=True, cast=bool),
+    'DATA_IMPORT_SCHEDULE': config('DATA_IMPORT_SCHEDULE', default='0 2 * * *'),  # Daily at 2 AM
+    'MAX_IMPORT_BATCH_SIZE': config('MAX_IMPORT_BATCH_SIZE', default=100, cast=int),
+    'DATA_SOURCE_TIMEOUT': config('DATA_SOURCE_TIMEOUT', default=30, cast=int),
+
+    # Performance Settings
+    'AI_REQUEST_TIMEOUT': config('AI_REQUEST_TIMEOUT', default=30, cast=int),
+    'MAX_CONCURRENT_AI_REQUESTS': config('MAX_CONCURRENT_AI_REQUESTS', default=5, cast=int),
+    'ENABLE_AI_RATE_LIMITING': config('ENABLE_AI_RATE_LIMITING', default=True, cast=bool),
+    'AI_RATE_LIMIT_REQUESTS_PER_HOUR': config('AI_RATE_LIMIT_REQUESTS_PER_HOUR', default=1000, cast=int),
+}
+
+# Redis Configuration for Caching and Celery
+REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    },
+    'ai_cache': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL + '/1',
+        'TIMEOUT': AI_SETTINGS['AI_CACHE_TIMEOUT'],
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    },
+    'search_cache': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URL + '/2',
+        'TIMEOUT': AI_SETTINGS['SEARCH_CACHE_TIMEOUT'],
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+# Celery Configuration for Background Tasks
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Celery Beat Configuration for Scheduled Tasks
+CELERY_BEAT_SCHEDULE = {
+    'data-import-daily': {
+        'task': 'legal_research.tasks.scheduled_data_import',
+        'schedule': crontab(minute=0, hour=2),  # Daily at 2 AM
+    },
+    'model-training-weekly': {
+        'task': 'legal_research.tasks.train_ml_models',
+        'schedule': crontab(minute=0, hour=3, day_of_week=1),  # Weekly on Monday at 3 AM
+    },
+    'cache-cleanup-daily': {
+        'task': 'legal_research.tasks.cleanup_old_cache',
+        'schedule': crontab(minute=0, hour=4),  # Daily at 4 AM
+    },
+    'audit-log-cleanup-monthly': {
+        'task': 'legal_research.tasks.cleanup_old_audit_logs',
+        'schedule': crontab(minute=0, hour=5, day_of_month=1),  # Monthly on 1st at 5 AM
+    },
+}
+
+# Session Configuration for AI Features
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
+
+# File Upload Settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = AI_SETTINGS['MAX_DOCUMENT_SIZE']
+DATA_UPLOAD_MAX_MEMORY_SIZE = AI_SETTINGS['MAX_DOCUMENT_SIZE']
+
+# Security Settings for AI
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=lambda v: [s.strip() for s in v.split(',') if s.strip()])
+
+# API Rate Limiting
+RATELIMIT_ENABLE = True
+RATELIMIT_USE_CACHE = 'default'
+
+# Monitoring and Analytics
+MONITORING_ENABLED = config('MONITORING_ENABLED', default=True, cast=bool)
+ANALYTICS_ENABLED = config('ANALYTICS_ENABLED', default=True, cast=bool)
+PERFORMANCE_MONITORING = config('PERFORMANCE_MONITORING', default=True, cast=bool)
+
+# Create necessary directories
+os.makedirs(AI_SETTINGS['MODEL_STORAGE_PATH'], exist_ok=True)
+os.makedirs(BASE_DIR / 'logs' / 'ai', exist_ok=True)
+os.makedirs(BASE_DIR / 'logs' / 'audit', exist_ok=True)

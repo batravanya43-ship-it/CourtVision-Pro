@@ -32,3 +32,34 @@ psycopg[binary]==3.2.1
 
 # ✅ Pillow - Python 3.13 compatible (use pre-release)
 pillow>=11.0.0b1
+
+# AI/ML Libraries
+openai>=1.0.0
+transformers>=4.35.0
+sentence-transformers>=2.2.0
+spacy>=3.7.0
+scikit-learn>=1.3.0
+numpy>=1.24.0
+torch>=2.1.0
+
+# Search and Vector Database
+elasticsearch>=8.10.0
+faiss-cpu>=1.7.0
+
+# Translation and NLP
+googletrans>=4.0.0
+indic-transliteration>=2.0.0
+
+# Ethical AI and Monitoring
+mlflow>=2.8.0
+shap>=0.44.0
+lime>=0.2.0
+
+# Legal Data Processing
+pdfplumber>=0.10.0
+beautifulsoup4>=4.12.0
+selenium>=4.15.0
+
+# Additional ML Libraries
+joblib>=1.3.0
+nltk>=3.8.0
