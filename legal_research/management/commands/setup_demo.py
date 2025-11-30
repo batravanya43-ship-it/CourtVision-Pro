@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from legal_research.models import HighCourt, UserProfile, Suit, Tag, Case
+from legal_research.models import HighCourt, UserProfile, Suit, Tag, Case, SearchHistory
 from decimal import Decimal
 from datetime import datetime, timedelta
 import uuid

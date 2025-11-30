@@ -329,35 +329,88 @@ AI_SETTINGS = {
 
 # Redis Configuration for Caching and Celery
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    },
-    'ai_cache': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/1',
-        'TIMEOUT': AI_SETTINGS['AI_CACHE_TIMEOUT'],
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    },
-    'search_cache': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL + '/2',
-        'TIMEOUT': AI_SETTINGS['SEARCH_CACHE_TIMEOUT'],
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+
+# Try to detect if Redis is available; if not, fall back to safe local defaults for development.
+USE_REDIS = True
+try:
+    # Parse host and port from REDIS_URL (simple parsing)
+    from urllib.parse import urlparse
+    parsed = urlparse(REDIS_URL)
+    redis_host = parsed.hostname or 'localhost'
+    redis_port = parsed.port or 6379
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(0.5)
+    try:
+        sock.connect((redis_host, redis_port))
+        sock.close()
+    except Exception:
+        USE_REDIS = False
+except Exception:
+    USE_REDIS = False
+
+if USE_REDIS:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
+        },
+        'ai_cache': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL + '/1',
+            'TIMEOUT': AI_SETTINGS['AI_CACHE_TIMEOUT'],
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
+        },
+        'search_cache': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL + '/2',
+            'TIMEOUT': AI_SETTINGS['SEARCH_CACHE_TIMEOUT'],
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
         }
     }
-}
 
-# Celery Configuration for Background Tasks
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
+    # Celery Configuration for Background Tasks (using Redis)
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+else:
+    # Fallback to local in-memory cache and memory-based Celery broker for development
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+        },
+        'ai_cache': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'ai-cache',
+            'TIMEOUT': AI_SETTINGS['AI_CACHE_TIMEOUT'],
+        },
+        'search_cache': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'search-cache',
+            'TIMEOUT': AI_SETTINGS['SEARCH_CACHE_TIMEOUT'],
+        }
+    }
+
+    # Use in-memory broker/backends for Celery in dev mode to avoid connection errors
+    CELERY_BROKER_URL = 'memory://'
+    CELERY_RESULT_BACKEND = 'cache'
+    CELERY_CACHE_BACKEND = 'default'
+
+    # Also ensure session engine will not rely on Redis
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+    # Log the fallback so developers are aware
+    import logging
+    logging.getLogger('legal_research').warning('Redis not available; falling back to LocMemCache and in-memory Celery broker for development.')
+
+# Celery general settings (remain valid for either backend)
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'

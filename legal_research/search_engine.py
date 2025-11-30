@@ -24,6 +24,7 @@ import numpy as np
 from .models import Case, HighCourt, Tag, SearchHistory, Customization
 from .ai_integration import ai_processor
 from .ml_models import relevance_scorer
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 

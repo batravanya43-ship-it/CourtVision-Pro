@@ -5,14 +5,14 @@ Handles AI service integrations, text processing, and legal document analysis
 
 import json
 import logging
-import asyncio
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime, timedelta
 import hashlib
 import uuid
 
+import torch
 import openai
-from openai import AsyncOpenAI
+from openai import OpenAI
 import spacy
 from transformers import AutoTokenizer, AutoModel
 import numpy as np
@@ -67,10 +67,10 @@ class OpenAIClient(AIServiceClient):
 
     def __init__(self):
         super().__init__("OpenAI")
-        self.client = AsyncOpenAI(api_key=getattr(settings, 'OPENAI_API_KEY', None))
-        self.model = getattr(settings, 'OPENAI_MODEL', 'gpt-4-turbo-preview')
+        self.client = OpenAI(api_key='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')
+        self.model = getattr(settings, 'OPENAI_MODEL', 'gpt-4.1')
 
-    async def extract_legal_principles(self, document_text: str) -> List[Dict[str, Any]]:
+    def extract_legal_principles(self, document_text: str) -> List[Dict[str, Any]]:
         """Extract key legal principles from document text"""
         if not self.check_availability():
             raise AIServiceError("OpenAI service is currently unavailable")
@@ -87,7 +87,7 @@ class OpenAIClient(AIServiceClient):
             {document_text[:4000]}
             """
 
-            response = await self.client.chat.completions.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a legal expert AI assistant."},
@@ -110,7 +110,7 @@ class OpenAIClient(AIServiceClient):
             self.handle_error(e)
             raise AIServiceError(f"Failed to extract legal principles: {str(e)}")
 
-    async def identify_precedents(self, case_text: str, case_database: List[Dict]) -> List[Dict[str, Any]]:
+    def identify_precedents(self, case_text: str, case_database: List[Dict]) -> List[Dict[str, Any]]:
         """Identify relevant precedents for a given case"""
         if not self.check_availability():
             raise AIServiceError("OpenAI service is currently unavailable")
@@ -137,7 +137,7 @@ class OpenAIClient(AIServiceClient):
             {case_summary}
             """
 
-            response = await self.client.chat.completions.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a legal research expert AI."},
@@ -156,7 +156,7 @@ class OpenAIClient(AIServiceClient):
             self.handle_error(e)
             raise AIServiceError(f"Failed to identify precedents: {str(e)}")
 
-    async def generate_case_summary(self, full_text: str, customization: Optional[Customization] = None) -> Dict[str, Any]:
+    def generate_case_summary(self, full_text: str, customization: Optional[Customization] = None) -> Dict[str, Any]:
         """Generate customized AI summary of a legal case"""
         if not self.check_availability():
             raise AIServiceError("OpenAI service is currently unavailable")
@@ -190,7 +190,7 @@ class OpenAIClient(AIServiceClient):
             {full_text[:4000]}
             """
 
-            response = await self.client.chat.completions.create(
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a legal expert providing case summaries for judicial officers."},
@@ -292,7 +292,7 @@ class LegalTextProcessor:
         self.local_client = LocalModelClient()
         self.cache_timeout = 86400  # 24 hours
 
-    async def process_legal_document(self, case: Case) -> Dict[str, Any]:
+    def process_legal_document(self, case: Case) -> Dict[str, Any]:
         """Process a legal document and extract AI insights"""
         try:
             document_text = case.case_text
@@ -321,20 +321,20 @@ class LegalTextProcessor:
             if self.openai_client.check_availability():
                 try:
                     # Extract legal principles
-                    principles = await self.openai_client.extract_legal_principles(document_text)
+                    principles = self.openai_client.extract_legal_principles(document_text)
                     results['principles'] = principles
                     results['processing_metadata']['services_used'].append('openai_principles')
 
                     # Generate summary
                     customization = self._get_user_customization(case)
-                    summary = await self.openai_client.generate_case_summary(document_text, customization)
+                    summary = self.openai_client.generate_case_summary(document_text, customization)
                     results['summary'] = summary
                     results['processing_metadata']['services_used'].append('openai_summary')
 
                     # Find precedents (sample implementation)
                     similar_cases = self._get_similar_cases(case, limit=10)
                     if similar_cases:
-                        precedents = await self.openai_client.identify_precedents(document_text, similar_cases)
+                        precedents = self.openai_client.identify_precedents(document_text, similar_cases)
                         results['precedents'] = precedents
                         results['processing_metadata']['services_used'].append('openai_precedents')
 
@@ -396,6 +396,27 @@ class LegalTextProcessor:
         except Exception as e:
             logger.warning(f"Failed to get similar cases: {str(e)}")
             return []
+    def process_legal_document_sync(self, case: Case) -> Dict[str, Any]:
+        """Lightweight synchronous processor used during imports"""
+
+        try:
+            document_text = case.case_text
+
+            # Only generate a summary (fast + safe)
+            summary = self.openai_client.generate_case_summary(
+                full_text=document_text,
+                customization=None
+            )
+
+            return {
+                "summary": summary.get("summary", ""),
+                "key_points": summary.get("key_points", []),
+                "decision": summary.get("decision", "")
+            }
+
+        except Exception as e:
+            logger.error(f"Sync AI processing failed: {str(e)}")
+            return {"summary": "", "key_points": [], "decision": ""}
 
 
 class PredictiveAnalytics:
@@ -404,7 +425,7 @@ class PredictiveAnalytics:
     def __init__(self):
         self.openai_client = OpenAIClient()
 
-    async def predict_case_outcome(self, case_features: Dict[str, Any], historical_data: List[Dict]) -> Dict[str, Any]:
+    def predict_case_outcome(self, case_features: Dict[str, Any], historical_data: List[Dict]) -> Dict[str, Any]:
         """Predict case outcome based on features and historical data"""
         if not self.openai_client.check_availability():
             return self._fallback_prediction(case_features)
@@ -429,7 +450,7 @@ class PredictiveAnalytics:
             {history_summary}
             """
 
-            response = await self.openai_client.chat.completions.create(
+            response = self.openai_client.chat.completions.create(
                 model=self.openai_client.model,
                 messages=[
                     {"role": "system", "content": "You are a legal analytics expert providing case outcome predictions."},
@@ -479,12 +500,12 @@ ai_processor = LegalTextProcessor()
 predictive_analytics = PredictiveAnalytics()
 
 
-async def process_case_ai(case: Case) -> Dict[str, Any]:
+def process_case_ai(case: Case) -> Dict[str, Any]:
     """Main function to process a case with AI"""
-    return await ai_processor.process_legal_document(case)
+    return ai_processor.process_legal_document(case)
 
 
-async def predict_case_outcome(case: Case, historical_data: List[Dict] = None) -> Dict[str, Any]:
+def predict_case_outcome(case: Case, historical_data: List[Dict] = None) -> Dict[str, Any]:
     """Main function to predict case outcome"""
     case_features = {
         'title': case.title,
@@ -498,4 +519,4 @@ async def predict_case_outcome(case: Case, historical_data: List[Dict] = None) -
     if historical_data is None:
         historical_data = []
 
-    return await predictive_analytics.predict_case_outcome(case_features, historical_data)
+    return predictive_analytics.predict_case_outcome(case_features, historical_data)

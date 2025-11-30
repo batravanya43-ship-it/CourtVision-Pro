@@ -461,88 +461,73 @@ class DataImportManager:
             return {'error': str(e), 'import_summary': {}}
 
     async def process_imported_cases(self, cases: List[Dict], source_name: str) -> Dict[str, Any]:
-        """Process imported cases and save to database"""
+        """Process imported cases and save to database (async-safe)"""
+        from asgiref.sync import sync_to_async
         imported = 0
         failed = 0
 
-        try:
-            for case_data in cases:
+        for case_data in cases:
+            try:
+                citation = case_data.get('citation', '')
+                # Check if case already exists
+                exists = await sync_to_async(Case.objects.filter(citation=citation).exists)()
+                if exists:
+                    logger.debug(f"Case already exists: {citation}")
+                    continue
+                # Get or create High Court
+                court_name = case_data.get('court', 'Unknown Court')
+                court, _ = await sync_to_async(HighCourt.objects.get_or_create)(
+                    name=court_name,
+                    defaults={
+                        'jurisdiction': 'India',
+                        'code': court_name.replace(' ', '_').lower()[:10],
+                        'established_date': datetime.now().date(),
+                        'is_active': True
+                    }
+                )
+                # Create case
+                case = await sync_to_async(Case.objects.create)(
+                    title=case_data.get('title', ''),
+                    citation=case_data.get('citation', ''),
+                    court=court,
+                    bench='',
+                    judgment_date=datetime.fromisoformat(case_data.get('judgment_date', datetime.now().isoformat())).date(),
+                    decision_date=datetime.fromisoformat(case_data.get('decision_date', datetime.now().isoformat())).date(),
+                    petitioners=case_data.get('petitioners', ''),
+                    respondents=case_data.get('respondents', ''),
+                    case_text=case_data.get('case_text', ''),
+                    headnotes=case_data.get('headnotes', ''),
+                    case_type=case_data.get('case_type', 'judgment'),
+                    relevance_score=0.0,
+                    is_published=True
+                )
+                # Add tags to case
+                tag_names = self._extract_tags_from_case(case_data)
+                tags = []
+                for tag_name in tag_names:
+                    tag, _ = await sync_to_async(Tag.objects.get_or_create)(
+                        name=tag_name,
+                        defaults={'description': f'Auto-generated tag: {tag_name}'}
+                    )
+                    tags.append(tag)
+                if tags:
+                    await sync_to_async(case.tags.add)(*tags)
+                # AI processing
                 try:
-                    with transaction.atomic():
-                        # Check if case already exists
-                        existing_case = Case.objects.filter(
-                            citation=case_data.get('citation', '')
-                        ).first()
-
-                        if existing_case:
-                            logger.debug(f"Case already exists: {case_data.get('citation')}")
-                            continue
-
-                        # Get or create High Court
-                        court_name = case_data.get('court', 'Unknown Court')
-                        court, created = HighCourt.objects.get_or_create(
-                            name=court_name,
-                            defaults={
-                                'jurisdiction': 'India',
-                                'code': court_name.replace(' ', '_').lower()[:10],
-                                'established_date': datetime.now().date(),
-                                'is_active': True
-                            }
-                        )
-
-                        # Create tags
-                        tags = []
-                        tag_names = self._extract_tags_from_case(case_data)
-                        for tag_name in tag_names:
-                            tag, created = Tag.objects.get_or_create(
-                                name=tag_name,
-                                defaults={'description': f'Auto-generated tag: {tag_name}'}
-                            )
-                            tags.append(tag)
-
-                        # Create case
-                        case = Case.objects.create(
-                            title=case_data.get('title', ''),
-                            citation=case_data.get('citation', ''),
-                            court=court,
-                            bench='',
-                            judgment_date=datetime.fromisoformat(case_data.get('judgment_date', datetime.now().isoformat())).date(),
-                            decision_date=datetime.fromisoformat(case_data.get('decision_date', datetime.now().isoformat())).date(),
-                            petitioners=case_data.get('petitioners', ''),
-                            respondents=case_data.get('respondents', ''),
-                            case_text=case_data.get('case_text', ''),
-                            headnotes=case_data.get('headnotes', ''),
-                            case_type=case_data.get('case_type', 'judgment'),
-                            relevance_score=0.0,
-                            is_published=True
-                        )
-
-                        # Add tags to case
-                        if tags:
-                            case.tags.add(*tags)
-
-                        # Process with AI (if available)
-                        try:
-                            ai_summary = await ai_processor.process_legal_document(case)
-                            if ai_summary:
-                                case.ai_summary = ai_summary.get('summary', {})
-                                case.extracted_principles = ai_summary.get('principles', [])
-                                case.statutes_cited = ai_summary.get('statutes_cited', [])
-                                case.precedents_cited = ai_summary.get('precedents', [])
-                                case.save()
-                        except Exception as e:
-                            logger.warning(f"AI processing failed for case {case.id}: {str(e)}")
-
-                        imported += 1
-                        logger.debug(f"Imported case: {case.citation}")
-
+                    ai_summary = await ai_processor.process_legal_document(case)
+                    if ai_summary:
+                        case.ai_summary = ai_summary.get('summary', {})
+                        case.extracted_principles = ai_summary.get('principles', [])
+                        case.statutes_cited = ai_summary.get('statutes_cited', [])
+                        case.precedents_cited = ai_summary.get('precedents', [])
+                        await sync_to_async(case.save)()
                 except Exception as e:
-                    logger.error(f"Failed to import case {case_data.get('citation', 'unknown')}: {str(e)}")
-                    failed += 1
-
-        except Exception as e:
-            logger.error(f"Batch case processing failed: {str(e)}")
-            failed += len(cases)
+                    logger.warning(f"AI processing failed for case {case.id}: {str(e)}")
+                imported += 1
+                logger.debug(f"Imported case: {case.citation}")
+            except Exception as e:
+                logger.error(f"Failed to import case {case_data.get('citation', 'unknown')}: {str(e)}")
+                failed += 1
 
         return {
             'imported': imported,

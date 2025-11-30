@@ -7,7 +7,7 @@ import json
 import logging
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime, timedelta
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 from django.db.models import Q, Count, Avg
 from django.core.cache import cache
