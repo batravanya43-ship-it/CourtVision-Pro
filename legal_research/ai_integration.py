@@ -67,7 +67,7 @@ class OpenAIClient(AIServiceClient):
 
     def __init__(self):
         super().__init__("OpenAI")
-        self.client = OpenAI(api_key='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')
+        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = getattr(settings, 'OPENAI_MODEL', 'gpt-4.1')
 
     def extract_legal_principles(self, document_text: str) -> List[Dict[str, Any]]:
